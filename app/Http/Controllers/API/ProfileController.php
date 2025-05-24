@@ -6,15 +6,19 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProfileRequests\UpdateProfileRequest;
 use App\Http\Resources\ProfileResource;
+use App\Repositories\UserRepositoryInterface;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
     protected $responseHelper;
+    protected $userRepository;
 
-    public function __construct(ResponseHelper $responseHelper)
+
+    public function __construct(ResponseHelper $responseHelper, UserRepositoryInterface $userRepository)
     {
         $this->responseHelper = $responseHelper;
+        $this->userRepository = $userRepository;
     }
 
     public function show(Request $request)
@@ -28,7 +32,7 @@ class ProfileController extends Controller
 
         $request->validated();
 
-        $user->update($request->only('name', 'email'));
+        $user = $this->userRepository->updateProfile($request->user()->id, $request->validated());
 
         return $this->responseHelper->success('User profile updated successfully.', new ProfileResource($user));
     }
