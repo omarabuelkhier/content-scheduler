@@ -2,27 +2,34 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProfileRequests\UpdateProfileRequest;
+use App\Http\Resources\ProfileResource;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    public function show(Request $request)
+    protected $responseHelper;
+
+    public function __construct(ResponseHelper $responseHelper)
     {
-        return response()->json($request->user());
+        $this->responseHelper = $responseHelper;
     }
 
-    public function update(Request $request)
+    public function show(Request $request)
+    {
+        return $this->responseHelper->success('User profile retrieved successfully.', new ProfileResource($request->user()));
+    }
+
+    public function update(UpdateProfileRequest $request)
     {
         $user = $request->user();
 
-        $request->validate([
-            'name'  => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
-        ]);
+        $request->validated();
 
         $user->update($request->only('name', 'email'));
 
-        return response()->json($user);
+        return $this->responseHelper->success('User profile updated successfully.', new ProfileResource($user));
     }
 }
