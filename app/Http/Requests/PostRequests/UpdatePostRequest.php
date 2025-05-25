@@ -25,7 +25,7 @@ class UpdatePostRequest extends FormRequest
             'title'          => 'sometimes|required|string|max:255',
             'content'        => 'sometimes|required|string',
             'image_url'      => 'nullable|url',
-            'scheduled_time' => 'sometimes|required|date|after:now',
+            'scheduled_time' => 'nullable|date|after:now',
             'status'         => 'sometimes|required|in:draft,scheduled,published',
         ];
     }
