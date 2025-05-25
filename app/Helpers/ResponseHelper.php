@@ -36,5 +36,15 @@ class ResponseHelper
             'message' => $message,
             'errors'  => $errors,
         ], $status);
-    }  //
+    }
+
+    public function paginatedSuccess(string $message, $pagination,$data,  int $statusCode = 200)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'meta'    => $pagination,
+            'data'    => $data,
+        ], $statusCode);
+    }
 }
