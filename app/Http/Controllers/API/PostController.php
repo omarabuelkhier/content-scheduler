@@ -35,12 +35,27 @@ class PostController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['status', 'date']);
-        $posts = $this->postRepository->getUserPosts($request->user()->id, $filters);
+        $perPage = $request->get('per_page', 10); // Default to 10 items per page
+
+        $posts = $this->postRepository->getUserPosts($request->user()->id, $filters, $perPage);
+
         if ($posts->isEmpty()) {
-            return $this->responseHelper->error('No posts found for the user.', 200);
+            return $this->responseHelper->error('No posts found for the user.', 404);
         }
-        return $this->responseHelper->success('Posts retrieved successfully.', PostResource::collection($posts));
+
+        return $this->responseHelper->paginatedSuccess(
+            'Posts retrieved successfully.',
+            [
+                'current_page' => $posts->currentPage(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
+            ],
+            PostResource::collection($posts->items()),
+
+        );
     }
+
     /*
         * Display a listing of all posts.
         *
@@ -51,11 +66,24 @@ class PostController extends Controller
     {
         // $this->authorize('viewAny', Post::class);
         $filters = $request->only(['status', 'date']);
-        $posts = $this->postRepository->getAllPosts($filters);
+        $perPage = $request->get('per_page', 10); // Default to 10 items per page
+
+        $posts = $this->postRepository->getAllPosts($filters, $perPage);
+
         if ($posts->isEmpty()) {
-            return $this->responseHelper->error('No posts found.', 200);
+            return $this->responseHelper->error('No posts found.', 404);
         }
-        return $this->responseHelper->success('Posts retrieved successfully.', PostResource::collection($posts));
+
+        return $this->responseHelper->paginatedSuccess(
+            'Posts retrieved successfully.',
+            [
+                'current_page' => $posts->currentPage(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
+            ],
+            PostResource::collection($posts->items())
+        );
     }
 
     /**
@@ -70,13 +98,23 @@ class PostController extends Controller
         // Validate the request data
         $data = $request->validated();
 
-        $post = $this->postRepository->create($data);
+        // Add the authenticated user's ID to the data
+        $data['user_id'] = $request->user()->id;
+
+        $post = $this->postRepository->createPost($data);
+
+        // Attach platforms to the post
+        if (isset($data['platforms']) && is_array($data['platforms'])) {
+            $post->platforms()->sync($data['platforms']);
+        }
+
         // Return a success response with the created post
         if (!$post) {
-            return $this->responseHelper->error('Failed to create post.', 200,);
+            return $this->responseHelper->error('Failed to create post.', 500);
         }
         return $this->responseHelper->success('Post created successfully.', new PostResource($post), 201);
     }
+
     /**
      * Display the specified post.
      *
@@ -91,6 +129,7 @@ class PostController extends Controller
         }
         return $this->responseHelper->success('Post retrieved successfully.', new PostResource($post));
     }
+
     /*
         * Update the specified post.
         *
@@ -100,15 +139,20 @@ class PostController extends Controller
         */
     public function update(UpdatePostRequest $request, $id)
     {
-        $this->authorize('update', Post::class);
-        $data = $request->validated();
-        $post = $this->postRepository->update($id, $data);
+        $post = $this->postRepository->getPostById($id);
         if (!$post) {
-            return $this->responseHelper->error('Failed to update post.', 200);
+            return $this->responseHelper->error('Post not found.', 404);
+        }
+        $this->authorize('update', $post);
+        $data = $request->validated();
+        $updatedPost = $this->postRepository->updatePost($id, $data);
+        if (!$updatedPost) {
+            return $this->responseHelper->error('Failed to update post.', 500);
         }
         // Return a success response with the updated post
-        return $this->responseHelper->success('Post updated successfully.', new PostResource($post));
+        return $this->responseHelper->success('Post updated successfully.', new PostResource($updatedPost));
     }
+
     /**
      * Remove the specified post from storage.
      *
@@ -118,9 +162,15 @@ class PostController extends Controller
      */
     public function destroy(DestroyPostRequest $request, $id)
     {
-        $this->authorize('delete', Post::class);
+        $post = $this->postRepository->getPostById($id);
 
-        $this->postRepository->delete($id);
+        if (!$post) {
+            return $this->responseHelper->error('Post not found.', 404);
+        }
+
+        $this->authorize('delete', $post);
+
+        $this->postRepository->deletePost($id);
         return $this->responseHelper->success('Post deleted successfully.');
     }
 }
