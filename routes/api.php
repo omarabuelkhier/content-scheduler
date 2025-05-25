@@ -34,5 +34,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('platforms')->middleware('auth:sanctum')->group(function () {
         Route::get('/', [PlatformController::class, 'index']);
         Route::post('/toggle', [PlatformController::class, 'toggle']);
+        Route::get('/attached', [PlatformController::class, 'getMyAttachedPlatforms']);
     });
 });
