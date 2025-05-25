@@ -11,7 +11,7 @@ class PostRepository extends BaseRepository implements PostRepositoryInterface
         parent::__construct($model);
     }
 
-    public function getUserPosts(int $userId, array $filters = [])
+    public function getUserPosts(int $userId, array $filters = [], int $perPage = 10)
     {
         $query = $this->model->where('user_id', $userId);
 
@@ -23,9 +23,9 @@ class PostRepository extends BaseRepository implements PostRepositoryInterface
             $query->whereDate('scheduled_time', $filters['date']);
         }
 
-        return $query->with('platforms')->latest()->get();
+        return $query->with('platforms')->latest()->paginate($perPage);
     }
-    public function getAllPosts(array $filters = [])
+    public function getAllPosts(array $filters = [],int $perPage = 10)
     {
         $query = $this->model;
 
@@ -37,7 +37,7 @@ class PostRepository extends BaseRepository implements PostRepositoryInterface
             $query->whereDate('scheduled_time', $filters['date']);
         }
 
-        return $query->with('platforms')->latest()->get();
+        return $query->with('platforms')->latest()->paginate($perPage);
     }
     public function getPostById(int $postId)
     {
