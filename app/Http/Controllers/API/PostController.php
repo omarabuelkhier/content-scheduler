@@ -85,7 +85,6 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        $this->authorize('view', Post::class);
         $post = $this->postRepository->getPostById($id);
         if (!$post) {
             return $this->responseHelper->error('Post not found.', 404);
