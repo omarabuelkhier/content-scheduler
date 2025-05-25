@@ -23,9 +23,14 @@ class ProfileController extends Controller
 
     public function show(Request $request)
     {
-        return $this->responseHelper->success('User profile retrieved successfully.', new ProfileResource($request->user()));
-    }
+        $user = $request->user();
 
+        if ($request->wantsJson()) {
+            return $this->responseHelper->success('User profile retrieved successfully.', new ProfileResource($user));
+        }
+
+        return view('profile.show', ['user' => $user]);
+    }
     public function update(UpdateProfileRequest $request)
     {
         $user = $request->user();
@@ -34,6 +39,10 @@ class ProfileController extends Controller
 
         $user = $this->userRepository->updateProfile($request->user()->id, $request->validated());
 
-        return $this->responseHelper->success('User profile updated successfully.', new ProfileResource($user));
+        if ($request->wantsJson()) {
+            return $this->responseHelper->success('User profile updated successfully.', new ProfileResource($user));
+        }
+
+        return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
     }
 }
