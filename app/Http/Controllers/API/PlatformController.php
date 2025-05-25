@@ -22,7 +22,7 @@ class PlatformController extends Controller
         $this->platformRepository = $platformRepository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $platforms = $this->platformRepository->getAllPlatforms();
 
@@ -31,10 +31,14 @@ class PlatformController extends Controller
         }
 
 
-        return $this->responseHelper->success(
-            'Platforms retrieved successfully',
-            PlatformResource::collection($platforms)
-        );
+        if ($request->wantsJson()) {
+            return $this->responseHelper->success(
+                'Platforms retrieved successfully.',
+                PlatformResource::collection($platforms)
+            );
+        }
+
+        return view('platforms.index', ['platforms' => $platforms]);
     }
 
     public function getMyAttachedPlatforms(Request $request)
@@ -54,17 +58,20 @@ class PlatformController extends Controller
             return $this->responseHelper->error('No platforms found for the user\'s posts.', 404);
         }
 
-        return $this->responseHelper->success(
-            'Unique platforms retrieved successfully.',
-            PlatformResource::collection($userPlatforms)
-        );
-    }
+        if ($request->wantsJson()) {
+            return $this->responseHelper->success(
+                'Unique platforms retrieved successfully.',
+                PlatformResource::collection($userPlatforms)
+            );
+        }
 
+        return view('platforms.attached', ['platforms' => $userPlatforms]);
+    }
     /**
      * Toggle the user's platform subscription.
      *
      * @param TogglePlatformRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse | \Illuminate\View\View
      */
     public function toggle(TogglePlatformRequest $request)
     {
@@ -102,8 +109,11 @@ class PlatformController extends Controller
                     'updated_at'    => now(),
                 ]);
             }
+            if ($request->wantsJson()) {
 
-            return $this->responseHelper->success('Platform attached successfully.');
+                return $this->responseHelper->success('Platform attached successfully.');
+            }
+            return view('platforms.index', ['message' => 'Platform attached successfully.']);
         }
     }
 }
